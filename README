@@ -1,0 +1,17 @@
+This is still a work-in-progress, although it works quite nicely. Please note that the paths are all hardcoded for the machine I work on, including the Hadoop jars.
+
+This is code for a Python/Java based web crawler of gamefaqs.com message boards.
+
+use boardLinkGen.py to get the links to boards. you must manually check how many pages of games there are for some system.
+
+chunkify.py then will look at all these links and create a link for every page within. this is needed for mapreduce to work, since each mapreduce thread will be downloading one page. it helps with fault-tolerance since the recovery time of dying after downloading one page of topics is far less than downloading 499 pages and dying on the last.
+
+you can just clusterwebmapper.jar to run the mapreduce job, with input links (from chunkify.py), output directory, and #reducers (I don't recommend more than 5 per machine, YMMV). i'll add the source for clusterwebmapper.jar later cause right now it won't work unless you have the exact path I hardcoded into it.
+
+gfCrawlMR.py does the downloading. you can test with it manually or let mapreduce use it. the output from chunkify.py works with gfCrawlMR.py ....this is important
+
+recoverFromFailure.py can be used when inevitaby, you are downloading thousands of links and you die near the end. inputting the right things you can get back a list of links that still needed to be explored.
+
+there's about a 1% data loss rate through all of this .mysterious losses with the HDFS read/writes, etc.
+
+
