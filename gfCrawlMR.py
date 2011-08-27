@@ -1,5 +1,6 @@
 from BeautifulSoup import BeautifulSoup 
 import random
+import getMsgMeta
 import time
 import urllib2
 import subprocess
@@ -27,8 +28,7 @@ TOPIC_CNT = 0
 PAGE_CNT = 0
 
 #This explores topics.
-#It takes into account whether we are crawling a locked/archived message or not, because those have different formatting on the names.
-#In any case, we (1) download the page, (2) check if it's archived/locked
+#In any case, we (1) download the page, (2) there is no 2 
 #(3) find the number of pages in the topic, (4) get the topic and board title
 #(5) parse out the messages, (6) parse out the names, (7) format the output file
 #(8) check if we need to go through another page and if so, change the link and iterate
@@ -37,17 +37,16 @@ def exploreTopic(link):
 	MAX_PAGES = 50 #Only want 50 pages per topic, max
 	inMsgBody, text, pages, curpage, pagelink = 0,"",0,0,""
 	postNo = 1 #Keep track of post number
+	postCounter = 0
 	creator = "" #Name of topic creator
 	boardTitle = ""
-	topicTitle = ""
-	archived = 0 #0 if topic not archived - nuances with posting format...
+	topicTitle = "" 
+	createDate,createTime,lastPostDate,lastPostTime = "","","",""
 	while(1):
 		global PAGE_CNT
 		PAGE_CNT = PAGE_CNT + 1
 		state = 0 #Have we gotten past all the links that wouclassld match "]" yet and gotten to the text
-		#os.system("lynx --dump "+link+pagelink+" > "+out_file_topic)
 		try:
-		#	page = urllib2.urlopen("http://www.gamefaqs.com/boards/997757-goldeneye-007/59855691")
 			page = urllib2.urlopen(link+pagelink)
 			time.sleep(random.randint(0,ub) % random.randint(1,ubt))
 		except urllib2.URLError:
@@ -56,11 +55,6 @@ def exploreTopic(link):
 
 		soup = BeautifulSoup(page)
 	
-		try:
-			if soup.findAll("strong")[1].renderContents() == "Topic archived":
-				archived = 1
-		except IndexError:
-			archived = 0
 
 		if postNo == 1:
 			words = soup.findAll(attrs={"class" : "u_pagenav"})
@@ -111,43 +105,30 @@ def exploreTopic(link):
 		f.close()
 		state = 0 #Reset state just in case.
 
-#Look for names: this varies based on whether the topic is archived/locked or not.
-		if archived == 0:
-			parsedNames = soup.findAll(attrs={"class":"name"})
-			names = parsedNames
-		else: 
-			names = soup.findAll(attrs={"class":"msg_stats_left"})
-			soup = BeautifulSoup(str(names))
-			parsedNames = soup.findAll("b")
-			state = 1
+		#contains a list of however many posts this page had - containing NAME POST_ID DATE TIME
+		metaInfo = getMsgMeta.getMsgMeta(soup,0)
 
-		i = 0
-		for name in names:
-			names[i] = parsedNames[i].renderContents()			
-			i = i + 1
+		
 
-		if archived == 0:
-			names.remove(names[0]) #This is a thing we don't want
-	
-		counter = 0 #This indexes the name-msg pairs.
-		for item in names:
-
+		counter = 0
+		lastInfo = ""
+		for info in metaInfo:
+			lastInfo = info
+			postCounter = postCounter + 1
+			if postCounter == 1:
+				createDate,createTime = info.split('\t')[2],info.split('\t')[3]
+				creator = info.split("\t")[0] 
 #.....so we should make output that is MapReduce friendly, to be fed to a tab-delimited scanner. Eventually, "text" will be written to the file the user specifies, so each line is the board title, the topic title, the current poster, the post number, and the message. We also can check who the topic creator is, and we increment things as necessary.
-			text = text+ sys.argv[3] + "\t" + boardTitle+"\t"+topicTitle+"\t" + item + "\t" + str(postNo) + "\t" + msg_list[counter] + "\n"
+			text = text+ sys.argv[3] + "\t" + boardTitle+"\t"+topicTitle+"\t" +info + "\t" + msg_list[counter] + "\n"
 			counter = counter + 1
-			if postNo == 1:
-				creator = item
-			postNo = postNo + 1
-			if archived == 0:
-				state = 0
 
 		os.system("rm "+out_file_topic)
-
+		
 		print "Page "+str(curpage)+" of "+link
 		curpage = curpage + 1
 		
 #Just check if we can stop looking through the topic.
-		if curpage >= MAX_PAGES or curpage > pages:
+		if curpage >= MAX_PAGES or curpage >= pages:
 			out = open(out_file,"a")
 			out.write(text)
 			out.close()
@@ -156,8 +137,9 @@ def exploreTopic(link):
 		pagelink = "?page="+str(curpage)
 	
 #After exiting the main while loop that iterates through the topic, we can use some variables we assigned to write to a separate data that will tell us info about creators, etc
+	lastPostDate,lastPostTime = lastInfo.split('\t')[2],lastInfo.split('\t')[3]
 	topicData = open(out_file+"topicsData","a")
-	topicData.write(sys.argv[3]+"\t"+boardTitle+"\t"+creator+"\t"+topicTitle+"\t"+str(postNo-1)+"\n")
+	topicData.write(sys.argv[3]+"\t"+boardTitle+"\t"+creator+"\t"+topicTitle+"\t"+str(postCounter)+"\t"+createDate+"\t"+createTime+"\t"+lastPostDate+"\t"+lastPostTime+"\n")
 	topicData.close()
 #######
 
@@ -176,7 +158,7 @@ def exploreBoard(link):
 	MAX_BOARD_PAGES = 1#Important. How many pages you visit.
 	link_prefix = link.split("=")[0] #...?page
 	cur_page = int(link.split("=")[1])
-	cur_link = link_prefix+"="+str(cur_page+1) #Where you start in reference to input.
+	cur_link = link_prefix+"="+str(cur_page) #Where you start in reference to input.
 	boards_visited = 0
 	startpg = "1" 
 	global TOPIC_CNT
@@ -244,6 +226,10 @@ def exploreBoard(link):
 ## MAIN ##
 ##########
 
+
+ub = random.randint(5,15) #To make waits between HTTP requests and avoid being rate-limited
+ubt = random.randint(1,13)
+
 if (len(sys.argv) < 2):
 	print "Usage: python gfCrawlMR.py <Output file> <board link> <system>"
 	exit(0)
@@ -261,8 +247,6 @@ timestamp.write(sys.argv[2])
 timestamp.close()
 
 
-ub = random.randint(5,15) #To make waits between HTTP requests and avoid being rate-limited
-ubt = random.randint(1,13)
 
 exploreBoard(sys.argv[2])
 os.system("rm "+timestamp_filename)
