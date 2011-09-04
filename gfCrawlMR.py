@@ -6,6 +6,9 @@ import urllib2
 import subprocess
 import sys, os
 
+#NOTE! You MUST change out_file to match where the output of these scripts will go
+#and also in the ClusterCrawler.java file, or else terrible things (like nothing working) will happen.
+
 #Ad-hoc crawler for gamefaqs message boards.
 #Sean Hogan, 2011
 #gfCrawlMR.py Is a version of gfCrawl.py that will work with a mapreduce application I will make. An independent script takes in a system, and returns a list of ALL boards for that game system.
@@ -48,7 +51,7 @@ def exploreTopic(link):
 		state = 0 #Have we gotten past all the links that wouclassld match "]" yet and gotten to the text
 		try:
 			page = urllib2.urlopen(link+pagelink)
-			time.sleep(random.randint(0,ub) % random.randint(1,ubt))
+			#time.sleep(random.randint(0,ub) % random.randint(1,ubt))
 		except urllib2.URLError:
 			print "Couldn't get "+link+pagelink+"\n"+"Skipping this topic."
 			return #Sacrifice this topic...	
@@ -200,7 +203,6 @@ def exploreBoard(link):
 				first_topic_link = line.split()[0][1:3]+". http"
 				state = 2
 			if "Created By" in line:
-				print "hi"
 				state = 1
 				
 		print str(len(topic_links))

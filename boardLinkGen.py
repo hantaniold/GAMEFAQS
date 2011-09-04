@@ -47,7 +47,7 @@ while(1):
 outFile.close()
 
 #SORT AND REMOVE DUPLICATES
-
+os.system("cp "+console+"boards.txt  ohhi.txt")
 os.system("sort "+console+"boards.txt > tmpsorted")
 f = open("tmpsorted","r")
 g = open("finalout","w")

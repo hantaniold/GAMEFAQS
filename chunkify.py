@@ -1,7 +1,7 @@
 
 #Chunkify.py
 #Takes as an input the list of boards from boardgen.py or whatever
-#What it does it it looks at all of these boards, sees how many pages there are and "chunks" them into 2 page splits. Which will work with gfcrawlmr.py as long as the settings for max boards is set to 2.
+#What it does it it looks at all of these boards, sees how many pages there are and "chunks" them into 1 page splits. Which will work with gfcrawlmr.py as long as the settings for max boards is set to 2.
 #sean hogan, 8/19/11
 import sys
 import os
@@ -23,6 +23,7 @@ for line in console_file:
 			if "Page 1 of" in another_line: #if so we can get the # of pages in the board
 				proceed = 1 #We got it so we can go on to the next line of input
 				numpages = int(another_line.split()[3])
+				print numpages
 				if numpages == 0: #Don't bother writing a link to an empty board.
 					break
 				i = 0 #i just counts every other page so we write that many as links to visit
@@ -39,6 +40,7 @@ for line in console_file:
 			break
 		else:
 			print("Oops, didn't get "+link+". Trying again...")
+			text = ""
 			time.sleep(7)
 
 output_file.close()

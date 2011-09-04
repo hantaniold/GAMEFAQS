@@ -2,6 +2,7 @@ from BeautifulSoup import BeautifulSoup
 import urllib2
 import sys
 
+#Sean Hogan, 2011
 #link = sys.argv[1]
 
 #page = urllib2.urlopen(link)
@@ -23,11 +24,13 @@ def getMsgMeta(soup,isArchived):
 				id = chunk.split("\"")[1]
 			if i == 4:
 				name = chunk.split()[0]
-			if i == 7:
+			if i == 7 and chunk.split()[0] == "Posted": #Edge case: Sometimes this will be (Moderator) or (Admin) 
 				date = chunk.split()[1]
 				time = chunk.split()[2]+" "+chunk.split()[3]
 				outtext = outtext + [name + "\t" + id + "\t" + date + "\t" + time]
 				break
+			elif i == 7:
+				i = i - 1
 			i = i + 1	
 
 	return outtext	

@@ -1,4 +1,15 @@
-This is still a work-in-progress, although it works quite nicely. Please note that the paths are all hardcoded for the machine I work on, including the Hadoop jars.
+This is still a work-in-progress, although it works quite nicely. Please note that the paths are all hardcoded for the machine I work on. This means you'll have to edit a few pathnames, in ClusterCrawler.java, gfCrawlMR.py, find500s.py . Basically, anything that works together with Hadoop.
+
+Yes, this means you'll have to recompile the java files (only ClusterCrawler, though..). To do that just use eclipse and point to your hadoop jars. 
+
+Requirements:
+
+For running gfCrawlMR.py : Beautiful Soup 3.2.0, URLLib2
+If you want to download in parallel, access to some sort of cluster to run Hadoop on
+I recommend for running on a cluster you have some sort of cleaning tool for logfiles, as they aren't very useful in this case and they end up taking obnoxious amounts of space if you run 100,000s of reduce tasks.
+
+------
+
 
 This is code for a Python/Java based web crawler of gamefaqs.com message boards.
 
